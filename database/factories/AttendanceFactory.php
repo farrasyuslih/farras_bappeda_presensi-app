@@ -30,4 +30,35 @@ class AttendanceFactory extends Factory
             'check_out_time' => $checkOut->format('H:i:s'),
         ];
     }
+    public function hadir(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'hadir',
+        ]);
+    }
+
+    public function terlambat(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'terlambat',
+        ]);
+    }
+
+    public function izin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'izin',
+            'check_in_time' => null,
+            'check_out_time' => null,
+        ]);
+    }
+
+    public function sakit(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'sakit',
+            'check_in_time' => null,
+            'check_out_time' => null,
+        ]);
+    }
 }
