@@ -145,4 +145,86 @@ class AuthenticationTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_guest_can_open_register_page(): void
+    {
+        $this->get(route('register'))
+            ->assertOk()
+            ->assertSee('Daftar akun');
+    }
+
+    public function test_authenticated_user_cannot_open_register_page(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+        ->get(route('register'))
+        ->assertRedirect(route('dashboard'));
+    }
+
+    public function test_register_requires_valid_fields(): void
+    {
+        $response = $this->post(route('register.store'), [])
+            ->assertSessionHasErrors(['name', 'email', 'password']);
+
+        $this -> assertDatabaseCount('users', 0);
+    }
+
+    public function test_registration_rejects_duplicate_email(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->post(route('register.store'), [
+            'name' => 'Test User',
+            'email' => $user->email,
+            'password' => 'password123',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasErrors(['email']);
+
+        $this->assertDatabaseCount('users', 1);
+    }
+
+    public function test_registration_rejects_password_mismatch(): void
+    {
+        $this -> post(route('register.store'), [
+            'name' => 'Pegawai Baru',
+            'email' => 'baru@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password456',
+        ])->assertSessionHasErrors(['password']);
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_guest_registers_as_pegawai_then_can_login(): void
+    {
+        $response = $this->post(route('register.store'), [
+            'name' => 'Pegawai Baru',
+            'email' => 'baru@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'role' => 'admin',
+        ]);
+
+        $response
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('success', 'Registrasi berhasil. Silakan login.');
+
+        $this->assertGuest();
+        $this->assertDatabaseHas('users', [
+            'name' => 'Pegawai Baru',
+            'email' => 'baru@example.com',
+            'role' => 'pegawai',
+        ]);
+
+        $user = User::where('email', 'baru@example.com')->firstOrFail();
+
+        $this->assertNotSame('password123', $user->password);
+
+        $this->post(route('login.authenticate'), [
+            'email' => 'baru@example.com',
+            'password' => 'password123',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($user);
+    }
 }

@@ -182,6 +182,7 @@
                 Masuk
             </button>
         </form>
+        <p>Belum punya akun? <a href="{{ route('register') }}">Daftar</a></p>
     </main>
 </body>
 </html>
