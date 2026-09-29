@@ -68,6 +68,30 @@
             color: #166534;
         }
 
+        .alert-error {
+            margin-bottom: 20px;
+            padding: 12px 14px;
+            border: 1px solid #fca5a5;
+            border-radius: 8px;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .check-in-button {
+            padding: 10px 16px;
+            border: 0;
+            border-radius: 7px;
+            background: #1d4ed8;
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .check-in-button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
         .user-information {
             margin-bottom: 24px;
         }
@@ -115,6 +139,12 @@
             </div>
         @endif
 
+        @if ($errors->any())
+            <div class="alert-error" role="alert">
+                {{ $errors->first() }}
+            </div>
+        @endif
+
         <section class="card">
             <div class="user-information">
                 <h2>Selamat datang, {{ auth()->user()->name }}</h2>
@@ -128,13 +158,21 @@
                 </p>
             </div>
 
-            <div class="empty-state">
-                <h2>Belum ada aktivitas presensi</h2>
+            @if ($todayAttendance)
+                <p>Check-in {{ $todayAttendance->attendance_date }} pukul {{ $todayAttendance->check_in_time }} ({{ ucfirst($todayAttendance->status) }})</p>
+            @else
+                <div class="empty-state">
+                    <h2>Belum ada aktivitas presensi</h2>
+                    <p>Anda belum check-in hari ini.</p>
+                </div>
+            @endif
 
-                <p>
-                    Fitur check-in dan check-out akan tersedia pada fase berikutnya.
-                </p>
-            </div>
+            <form method="POST" action="{{ route('check-in.store') }}" style="margin-top: 20px">
+                @csrf
+                <button class="check-in-button" type="submit" @disabled($todayAttendance)>
+                    {{ $todayAttendance ? 'Sudah check-in hari ini' : 'Check-in' }}
+                </button>
+            </form>
         </section>
     </main>
 </body>

@@ -14,7 +14,15 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {return view ('index');})->name('dashboard');
+    Route::get('/dashboard', function () {
+        $todayAttendance = auth()->user()->attendances()
+            ->whereDate('attendance_date', now()->toDateString())
+            ->first();
+
+        return view('index', compact('todayAttendance'));
+    })->name('dashboard');
+
+    Route::post('/check-in', [App\Http\Controllers\CheckInController::class, 'store'])->name('check-in.store');
 
     Route::post('/logout', [App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
 });
