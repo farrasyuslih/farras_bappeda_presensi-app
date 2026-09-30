@@ -87,7 +87,7 @@ class CheckInTest extends TestCase
 
         Carbon::setTestNow(Carbon::parse('2026-09-28 07:40:00', 'Asia/Jakarta'));
         $this->actingAs($user)->post(route('check-in.store'))
-            ->assertSessionHasErrors(['check_in' => 'Anda sudah check-in hari ini.']);
+            ->assertSessionHasErrors(['check_in' => 'Presensi Anda hari ini sudah tercatat.']);
 
         $this->assertDatabaseCount('attendances', 1);
         $this->assertDatabaseHas('attendances', [

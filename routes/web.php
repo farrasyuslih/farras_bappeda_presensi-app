@@ -23,6 +23,8 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 
     Route::post('/check-in', [App\Http\Controllers\CheckInController::class, 'store'])->name('check-in.store');
+    Route::post('/check-out', [App\Http\Controllers\CheckOutController::class, 'store'])->name('check-out.store');
+    Route::post('/absence', [App\Http\Controllers\AbsenceController::class, 'store'])->name('absence.store');
 
     Route::post('/logout', [App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
 });

@@ -77,7 +77,9 @@
             color: #991b1b;
         }
 
-        .check-in-button {
+        .check-in-button,
+        .check-out-button,
+        .absence-button {
             padding: 10px 16px;
             border: 0;
             border-radius: 7px;
@@ -87,7 +89,9 @@
             font-weight: 600;
         }
 
-        .check-in-button:disabled {
+        .check-in-button:disabled,
+        .check-out-button:disabled,
+        .absence-button:disabled {
             background: #94a3b8;
             cursor: not-allowed;
         }
@@ -159,7 +163,14 @@
             </div>
 
             @if ($todayAttendance)
-                <p>Check-in {{ $todayAttendance->attendance_date }} pukul {{ $todayAttendance->check_in_time }} ({{ ucfirst($todayAttendance->status) }})</p>
+                @if ($todayAttendance->check_in_time)
+                    <p>Check-in {{ $todayAttendance->attendance_date }} pukul {{ $todayAttendance->check_in_time }} ({{ ucfirst($todayAttendance->status) }})</p>
+                @else
+                    <p>{{ ucfirst($todayAttendance->status) }} tercatat untuk {{ $todayAttendance->attendance_date }}.</p>
+                @endif
+                @if ($todayAttendance->check_out_time)
+                    <p>Check-out pukul {{ $todayAttendance->check_out_time }}</p>
+                @endif
             @else
                 <div class="empty-state">
                     <h2>Belum ada aktivitas presensi</h2>
@@ -173,6 +184,23 @@
                     {{ $todayAttendance ? 'Sudah check-in hari ini' : 'Check-in' }}
                 </button>
             </form>
+
+            @if (! $todayAttendance)
+                <form method="POST" action="{{ route('absence.store') }}" style="margin-top: 12px">
+                    @csrf
+                    <button class="absence-button" type="submit" name="status" value="izin">Izin hari ini</button>
+                    <button class="absence-button" type="submit" name="status" value="sakit">Sakit hari ini</button>
+                </form>
+            @endif
+
+            @if ($todayAttendance && $todayAttendance->check_in_time)
+                <form method="POST" action="{{ route('check-out.store') }}" style="margin-top: 12px">
+                    @csrf
+                    <button class="check-out-button" type="submit" @disabled($todayAttendance->check_out_time)>
+                        {{ $todayAttendance->check_out_time ? 'Sudah check-out hari ini' : 'Check-out' }}
+                    </button>
+                </form>
+            @endif
         </section>
     </main>
 </body>
