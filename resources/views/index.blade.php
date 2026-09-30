@@ -162,6 +162,8 @@
                 </p>
             </div>
 
+            <p><a href="{{ route('attendances.index') }}">Lihat riwayat presensi</a></p>
+
             @if ($todayAttendance)
                 @if ($todayAttendance->check_in_time)
                     <p>Check-in {{ $todayAttendance->attendance_date }} pukul {{ $todayAttendance->check_in_time }} ({{ ucfirst($todayAttendance->status) }})</p>
