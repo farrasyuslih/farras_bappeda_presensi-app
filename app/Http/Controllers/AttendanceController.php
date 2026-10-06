@@ -11,8 +11,11 @@ class AttendanceController extends Controller
     public function index(Request $request)
     {
         $keys = ['name', 'exact_date', 'start_date', 'end_date', 'month', 'year', 'status'];
-        $input = $request->only($keys);
+        $sortingKeys = ['sort', 'direction'];
+        $input = $request->only(array_merge($keys, $sortingKeys));
         $validator = Validator::make($input, [
+            'sort' => ['nullable', 'string', Rule::in(['date'])],
+            'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'name' => ['nullable', 'string', 'max:255'],
             'exact_date' => ['nullable', 'date_format:Y-m-d'],
             'start_date' => ['nullable', 'date_format:Y-m-d'],
@@ -28,6 +31,7 @@ class AttendanceController extends Controller
             'between' => ':attribute harus antara :min dan :max.',
             'in' => ':attribute tidak valid.',
         ], [
+            'sort' => 'Kolom sorting', 'direction' => 'Arah sorting',
             'name' => 'Nama', 'exact_date' => 'Tanggal tepat',
             'start_date' => 'Tanggal awal', 'end_date' => 'Tanggal akhir',
             'month' => 'Bulan', 'year' => 'Tahun', 'status' => 'Status',
@@ -52,14 +56,19 @@ class AttendanceController extends Controller
 
         // Keep scalar input visible even when validation fails; arrays cannot be rendered as form values.
         $filters = array_fill_keys($keys, '');
+        $sorting = array_fill_keys($sortingKeys, '');
         foreach ($input as $key => $value) {
-            $filters[$key] = is_scalar($value) ? (string) $value : '';
+            if (in_array($key, $sortingKeys, true)) {
+                $sorting[$key] = is_scalar($value) ? (string) $value : '';
+            } else {
+                $filters[$key] = is_scalar($value) ? (string) $value : '';
+            }
         }
         $hasFilters = collect($filters)->contains(fn ($value) => $value !== '');
 
         if ($validator->fails()) {
-            return response()->view('attendances.index', [
-                'attendances' => collect(), 'filters' => $filters,
+            return response()->view('attendances.list_presensi', [
+                'attendances' => collect(), 'filters' => $filters, 'sorting' => $sorting,
                 'hasFilters' => $hasFilters, 'filterErrors' => $validator->errors(),
             ], 422);
         }
@@ -88,10 +97,13 @@ class AttendanceController extends Controller
         if ($filled('status')) {
             $query->where('status', $filters['status']);
         }
-        $attendances = $query->orderByDesc('attendance_date')->orderByDesc('id')->get();
+        // Sort only the authenticated employee's dates; ID keeps ties deterministic.
+        $direction = $sorting['direction'] ?: 'desc';
+        $attendances = $query->orderBy('attendance_date', $direction)
+            ->orderByDesc('attendances.id')->get();
 
-        return view('attendances.index', [
-            'attendances' => $attendances, 'filters' => $filters,
+        return view('attendances.list_presensi', [
+            'attendances' => $attendances, 'filters' => $filters, 'sorting' => $sorting,
             'hasFilters' => $hasFilters, 'filterErrors' => $validator->errors(),
         ]);
     }

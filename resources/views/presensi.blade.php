@@ -171,7 +171,7 @@
                     <p>{{ ucfirst($todayAttendance->status) }} tercatat untuk {{ $todayAttendance->attendance_date }}.</p>
                 @endif
                 @if ($todayAttendance->check_out_time)
-                    <p>Check-out pukul {{ $todayAttendance->check_out_time }}</p>
+                    <p>Check-out pukul {{ $todayAttendance->check_out_time }}@if ($todayAttendance->checkoutLabel()) — {{ $todayAttendance->checkoutLabel() }}@endif</p>
                 @endif
             @else
                 <div class="empty-state">

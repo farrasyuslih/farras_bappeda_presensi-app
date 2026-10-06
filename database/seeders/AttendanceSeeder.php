@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use App\Models\User;
 use App\Models\Attendance;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 
 class AttendanceSeeder extends Seeder
 {
@@ -18,6 +18,10 @@ class AttendanceSeeder extends Seeder
         $dates = collect();
         foreach ($users as $user) {
             for ($i = 0; $i < 30; $i++) {
+                if (Carbon::now('Asia/Jakarta')->subDays($i)->isWeekend()) {
+                    continue;
+                }
+
                 $dates->push([
                     'user_id' => $user->id,
                     'attendance_date' => now()->subDays($i)->format('Y-m-d'),
@@ -25,16 +29,14 @@ class AttendanceSeeder extends Seeder
             }
         }
         $records = $dates->shuffle()->take(100);
-        foreach($records as $index => $record) {
+        foreach ($records as $index => $record) {
             $factory = match (true) {
-                $index < 60 => Attendance::factory()->hadir(),
-                $index < 80 => Attendance::factory()->terlambat(),
-                $index < 90 => Attendance::factory()->izin(),
-                default => Attendance::factory()->sakit(),
+                $index < 60 => Attendance::factory()->state($record)->hadir(),
+                $index < 80 => Attendance::factory()->state($record)->terlambat(),
+                $index < 90 => Attendance::factory()->state($record)->izin(),
+                default => Attendance::factory()->state($record)->sakit(),
             };
-            $factory->create($record);
-            
+            $factory->create();
         }
-        
     }
 }

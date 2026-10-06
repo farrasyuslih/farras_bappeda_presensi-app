@@ -39,6 +39,11 @@ class CheckOutController extends Controller
             return back()->withErrors(['check_out' => 'Anda sudah check-out hari ini.']);
         }
 
-        return redirect()->route('dashboard')->with('success', 'Check-out berhasil.');
+        $attendance->check_out_time = $checkOut->format('H:i:s');
+        $message = $attendance->checkoutLabel() === 'Pulang lebih awal'
+            ? 'Check-out berhasil. Pulang lebih awal.'
+            : 'Check-out berhasil.';
+
+        return redirect()->route('dashboard')->with('success', $message);
     }
 }

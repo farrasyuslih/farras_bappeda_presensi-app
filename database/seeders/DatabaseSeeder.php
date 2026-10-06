@@ -18,12 +18,12 @@ class DatabaseSeeder extends Seeder
 
         User::factory()->create([
             'name' => 'Admin',
-            'email' => 'admin@example.com',
+            'email' => 'admin@mail.com',
             'role' => 'admin',
         ]);
 
         User::factory(9)->create();
-        
+
         $this->call(AttendanceSeeder::class);
     }
 }

@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\AbsenceController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CheckInController;
+use App\Http\Controllers\CheckOutController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -7,10 +12,10 @@ Route::get('/', function () {
 });
 
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [App\Http\Controllers\AuthController::class, 'login'])->name('login.authenticate');
-    Route::get('/register', [App\Http\Controllers\AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [App\Http\Controllers\AuthController::class, 'register'])->name('register.store');
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.authenticate');
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 });
 
 Route::middleware('auth')->group(function () {
@@ -19,13 +24,13 @@ Route::middleware('auth')->group(function () {
             ->whereDate('attendance_date', now()->toDateString())
             ->first();
 
-        return view('index', compact('todayAttendance'));
+        return view('presensi', compact('todayAttendance'));
     })->name('dashboard');
 
-    Route::post('/check-in', [App\Http\Controllers\CheckInController::class, 'store'])->name('check-in.store');
-    Route::post('/check-out', [App\Http\Controllers\CheckOutController::class, 'store'])->name('check-out.store');
-    Route::post('/absence', [App\Http\Controllers\AbsenceController::class, 'store'])->name('absence.store');
-    Route::get('/attendances', [App\Http\Controllers\AttendanceController::class, 'index'])->name('attendances.index');
+    Route::post('/check-in', [CheckInController::class, 'store'])->name('check-in.store');
+    Route::post('/check-out', [CheckOutController::class, 'store'])->name('check-out.store');
+    Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
+    Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendances.index');
 
-    Route::post('/logout', [App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

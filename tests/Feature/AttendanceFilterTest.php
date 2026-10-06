@@ -107,7 +107,7 @@ class AttendanceFilterTest extends TestCase
     {
         $user = $this->dataset();
         $this->actingAs($user)->get(route('attendances.index', ['status' => 'izin']))
-            ->assertSee('href="'.route('attendances.index').'">Reset filter', false);
+            ->assertSee('href="'.route('attendances.index').'" title="Hapus semua filter dan kembalikan urutan awal">Reset', false);
         $this->get(route('attendances.index'))->assertOk()
             ->assertViewHas('attendances', fn ($rows) => $rows->count() === 6)
             ->assertViewHas('filters', fn ($filters) => collect($filters)->every(fn ($value) => $value === ''));

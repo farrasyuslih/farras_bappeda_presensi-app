@@ -13,6 +13,13 @@
         .empty-state { padding:40px; text-align:center; color:#747887; } .errors { color:#b91c1c; background:#fff1f2; padding:12px 18px; border-radius:8px; margin-bottom:18px; }
         dialog { width:min(860px,calc(100% - 32px)); border:0; border-radius:16px; padding:0; box-shadow:0 24px 80px #17203930; max-height:90vh; overflow:auto; } dialog::backdrop { background:#18203666; } .modal-head { display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #e8e9ee; } .modal-head h2 { margin:0; font-size:18px; } .modal-grid { display:grid; grid-template-columns:1.1fr 1fr; } .calendar-panel { padding:24px; border-right:1px solid #e8e9ee; } .calendar-nav { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:20px; } .calendar-nav button { padding:7px 12px; } .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; } .weekday { text-align:center; padding:8px 0; color:#8a8e9c; font-size:12px; } .day { padding:10px 0; border:0; font-size:14px; } .day.selected { background:#6938db; color:white; } .day.in-range { background:#eee8ff; color:#6740d8; } .calendar-hint { font-size:13px; line-height:1.6; color:#747887; margin:20px 0 0; } .date-form { padding:24px; display:grid; gap:16px; align-content:start; } label { display:grid; gap:7px; font-size:13px; } label input,label select { width:100%; } .mode-fields { display:grid; gap:14px; } [hidden] { display:none !important; } .modal-foot { display:flex; justify-content:space-between; align-items:center; padding:18px 24px; border-top:1px solid #e8e9ee; } .modal-actions { display:flex; gap:10px; }
         @media(max-width:640px) { .container { width:calc(100% - 24px); margin:20px auto; } .card { padding:18px; } .search { flex-basis:100%; } .toolbar select { flex:1; } .modal-grid { grid-template-columns:1fr; } .calendar-panel { border-right:0; border-bottom:1px solid #e8e9ee; } th,td { padding:14px; } }
+        .sort-hint { color:#747887; font-size:13px; margin:0 0 12px; }
+        .sortable .sort-header { color:inherit; display:inline-block; }
+        .sortable .sort-header::after { margin-left:3px; content:'\25B8'; font-size:1.2em; color:#747887; transition:color .2s ease-in-out; }
+        .sortable .sort-header:hover::after { color:inherit; }
+        .sortable th.dir-d .sort-header::after { content:'\25BE'; color:inherit; }
+        .sortable th.dir-u .sort-header::after { content:'\25B4'; color:inherit; }
+        .sort-caption { display:block; font-size:12px; font-weight:400; color:#747887; margin-top:4px; }
     </style>
 </head>
 <body>
@@ -23,6 +30,8 @@
 
             <p class="subtitle">Riwayat presensi pribadi Anda.</p>
             <form id="attendance-filters" method="GET" action="{{ route('attendances.index') }}">
+                <input type="hidden" name="sort" value="{{ $sorting['sort'] }}">
+                <input type="hidden" name="direction" value="{{ $sorting['direction'] }}">
                 <div class="toolbar">
                     <label class="search" aria-label="Search nama">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/></svg>
@@ -39,7 +48,7 @@
                         @endif
                     </select>
                     <button type="submit" class="primary">Cari</button>
-                    <a class="reset" href="{{ route('attendances.index') }}">Reset filter</a>
+                    <a class="reset" href="{{ route('attendances.index') }}" title="Hapus semua filter dan kembalikan urutan awal">Reset</a>
                 </div>
                 @if (collect($filters)->except(['name', 'status'])->contains(fn ($value) => $value !== ''))
                     <p class="filter-summary">Tanggal aktif:
@@ -54,7 +63,7 @@
                         <div class="calendar-panel">
                             <div class="calendar-nav"><button type="button" id="previous-month" aria-label="Bulan sebelumnya">‹</button><strong id="calendar-title" aria-live="polite"></strong><button type="button" id="next-month" aria-label="Bulan berikutnya">›</button></div>
                             <div class="calendar-grid" id="calendar"></div>
-                            <p class="calendar-hint">Klik satu tanggal untuk tanggal tepat. Klik tanggal kedua untuk rentang. Klik lagi untuk memulai pilihan baru.</p>
+                            <p class="calendar-hint">Klik satu tanggal untuk tanggal tepat.<br>Klik tanggal kedua untuk rentang.<br>Klik lagi untuk memulai pilihan baru.</p>
                         </div>
                         <div class="date-form">
                             <label>Jenis filter<select id="date-mode"><option value="exact">Tanggal tepat</option><option value="range">Rentang tanggal</option><option value="period">Bulan / tahun</option></select></label>
@@ -79,11 +88,20 @@
             @elseif ($attendances->isEmpty())
                 <p class="empty-state">{{ $hasFilters ? 'Tidak ada presensi yang cocok dengan filter.' : 'Belum ada data presensi.' }}</p>
             @else
-                <div class="table-wrap"><table>
+                @php
+                    $activeDirection = $sorting['direction'] ?: 'desc';
+                    $nextDirection = $activeDirection === 'asc' ? 'desc' : 'asc';
+                    $activeFilters = array_filter($filters, fn ($value) => $value !== '');
+                @endphp
+                <p class="sort-hint">Klik Tanggal untuk membalik urutan.</p>
+                <div class="table-wrap"><table class="sortable">
                     <thead>
                         <tr>
-                            <th>Nama</th>
-                            <th>Tanggal</th>
+                            <th scope="col">Nama</th>
+                            <th scope="col" class="{{ $activeDirection === 'asc' ? 'dir-u' : 'dir-d' }}" aria-sort="{{ $activeDirection === 'asc' ? 'ascending' : 'descending' }}">
+                                <a class="sort-header" href="{{ route('attendances.index', $activeFilters + ['sort' => 'date', 'direction' => $nextDirection]) }}" title="Urutkan Tanggal: {{ $nextDirection === 'asc' ? 'terlama dulu' : 'terbaru dulu' }}" aria-label="Urutkan Tanggal: {{ $nextDirection === 'asc' ? 'terlama dulu' : 'terbaru dulu' }}">Tanggal</a>
+                                <small class="sort-caption">{{ $activeDirection === 'asc' ? 'Terlama' : 'Terbaru' }}</small>
+                            </th>
                             <th>Check-in</th>
                             <th>Check-out</th>
                             <th>Status</th>
@@ -95,7 +113,7 @@
                                 <td>{{ $attendance->user->name }}</td>
                                 <td>{{ $attendance->attendance_date }}</td>
                                 <td>{{ $attendance->check_in_time ?? '—' }}</td>
-                                <td>{{ $attendance->check_out_time ?? '—' }}</td>
+                                <td>{{ $attendance->check_out_time ?? '—' }}@if ($attendance->checkoutLabel())<br><small>{{ $attendance->checkoutLabel() }}</small>@endif</td>
                                 <td><span class="badge badge-{{ $attendance->status }}">{{ ucfirst($attendance->status) }}</span></td>
                             </tr>
                         @endforeach

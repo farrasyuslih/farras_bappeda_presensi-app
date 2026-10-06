@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use Carbon\Carbon;
 use App\Models\Attendance;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -12,28 +12,27 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class AttendanceFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
-        $checkIn = fake()->dateTimeBetween('06:30:00', '07:30:00');
-        $checkOut = (clone $checkIn)->modify('+8 hours');
+        do {
+            $date = Carbon::instance(fake()->dateTimeBetween('-30 days', 'now'));
+        } while ($date->isWeekend());
 
         return [
             'user_id' => User::factory(),
-            'attendance_date' => fake()->dateTimeBetween('-30 days', 'now')->format('Y-m-d'),
+            'attendance_date' => $date->toDateString(),
             'status' => 'hadir',
-            'check_in_time' => $checkIn->format('H:i:s'),
-            'check_out_time' => $checkOut->format('H:i:s'),
+            'check_in_time' => $this->clockBetween('06:30:00', '07:30:00'),
+            'check_out_time' => $this->regularCheckOut($date->toDateString()),
         ];
     }
+
     public function hadir(): static
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'hadir',
+            'check_in_time' => $this->clockBetween('06:30:00', '07:30:00'),
+            'check_out_time' => $this->regularCheckOut($attributes['attendance_date']),
         ]);
     }
 
@@ -41,6 +40,8 @@ class AttendanceFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'terlambat',
+            'check_in_time' => $this->clockBetween('07:30:01', '09:00:00'),
+            'check_out_time' => $this->regularCheckOut($attributes['attendance_date']),
         ]);
     }
 
@@ -60,5 +61,24 @@ class AttendanceFactory extends Factory
             'check_in_time' => null,
             'check_out_time' => null,
         ]);
+    }
+
+    private function regularCheckOut(string $date): string
+    {
+        $end = Carbon::parse($date, 'Asia/Jakarta')->dayOfWeekIso === 5 ? '16:30:00' : '16:00:00';
+
+        return $this->clockBetween($end, Carbon::parse($end)->addMinutes(30)->format('H:i:s'));
+    }
+
+    private function clockBetween(string $start, string $end): string
+    {
+        return gmdate('H:i:s', fake()->numberBetween($this->seconds($start), $this->seconds($end)));
+    }
+
+    private function seconds(string $time): int
+    {
+        [$hour, $minute, $second] = array_map('intval', explode(':', $time));
+
+        return $hour * 3600 + $minute * 60 + $second;
     }
 }
