@@ -13,7 +13,8 @@ class AttendanceController extends Controller
         $keys = ['name', 'exact_date', 'start_date', 'end_date', 'month', 'year', 'status'];
         $sortingKeys = ['sort', 'direction'];
         $input = $request->only(array_merge($keys, $sortingKeys));
-        $validator = Validator::make($input, [
+        $validator = Validator::make($input + $request->only('per_page'), [
+            'per_page' => ['nullable', 'integer', Rule::in([10, 25, 50])],
             'sort' => ['nullable', 'string', Rule::in(['date'])],
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'name' => ['nullable', 'string', 'max:255'],
@@ -31,6 +32,7 @@ class AttendanceController extends Controller
             'between' => ':attribute harus antara :min dan :max.',
             'in' => ':attribute tidak valid.',
         ], [
+            'per_page' => 'Baris per halaman',
             'sort' => 'Kolom sorting', 'direction' => 'Arah sorting',
             'name' => 'Nama', 'exact_date' => 'Tanggal tepat',
             'start_date' => 'Tanggal awal', 'end_date' => 'Tanggal akhir',
@@ -100,7 +102,7 @@ class AttendanceController extends Controller
         // Sort only the authenticated employee's dates; ID keeps ties deterministic.
         $direction = $sorting['direction'] ?: 'desc';
         $attendances = $query->orderBy('attendance_date', $direction)
-            ->orderByDesc('attendances.id')->get();
+            ->orderByDesc('attendances.id')->paginate((int) ($request->input('per_page') ?: 10))->withQueryString();
 
         return view('attendances.list_presensi', [
             'attendances' => $attendances, 'filters' => $filters, 'sorting' => $sorting,

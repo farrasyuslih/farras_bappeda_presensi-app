@@ -13,6 +13,16 @@
         .empty-state { padding:40px; text-align:center; color:#747887; } .errors { color:#b91c1c; background:#fff1f2; padding:12px 18px; border-radius:8px; margin-bottom:18px; }
         dialog { width:min(860px,calc(100% - 32px)); border:0; border-radius:16px; padding:0; box-shadow:0 24px 80px #17203930; max-height:90vh; overflow:auto; } dialog::backdrop { background:#18203666; } .modal-head { display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid #e8e9ee; } .modal-head h2 { margin:0; font-size:18px; } .modal-grid { display:grid; grid-template-columns:1.1fr 1fr; } .calendar-panel { padding:24px; border-right:1px solid #e8e9ee; } .calendar-nav { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:20px; } .calendar-nav button { padding:7px 12px; } .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; } .weekday { text-align:center; padding:8px 0; color:#8a8e9c; font-size:12px; } .day { padding:10px 0; border:0; font-size:14px; } .day.selected { background:#6938db; color:white; } .day.in-range { background:#eee8ff; color:#6740d8; } .calendar-hint { font-size:13px; line-height:1.6; color:#747887; margin:20px 0 0; } .date-form { padding:24px; display:grid; gap:16px; align-content:start; } label { display:grid; gap:7px; font-size:13px; } label input,label select { width:100%; } .mode-fields { display:grid; gap:14px; } [hidden] { display:none !important; } .modal-foot { display:flex; justify-content:space-between; align-items:center; padding:18px 24px; border-top:1px solid #e8e9ee; } .modal-actions { display:flex; gap:10px; }
         @media(max-width:640px) { .container { width:calc(100% - 24px); margin:20px auto; } .card { padding:18px; } .search { flex-basis:100%; } .toolbar select { flex:1; } .modal-grid { grid-template-columns:1fr; } .calendar-panel { border-right:0; border-bottom:1px solid #e8e9ee; } th,td { padding:14px; } }
+        .pagination { display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-top:20px; padding:16px 20px; border:1px solid #dddfe3; border-radius:18px; color:#303238; font-size:14px; }
+        .pagination form,.pagination-actions { display:flex; align-items:center; gap:10px; margin:0; }
+        .pagination label { display:flex; align-items:center; gap:12px; white-space:nowrap; font-size:14px; }
+        .pagination input { width:54px; text-align:center; padding:10px 5px; appearance:textfield; } .pagination input::-webkit-inner-spin-button { appearance:none; }
+        .pagination select { width:72px; padding:10px; }
+        .page-link { display:inline-flex; align-items:center; justify-content:center; min-width:36px; height:42px; padding:0 8px; border-radius:9px; color:#737373; }
+        .page-arrow { min-width:42px; border:1px solid #d7d7da; font-size:27px; line-height:1; box-shadow:0 1px 2px #00000008; }
+        a.page-link:hover { background:#f4f0ff; color:#6740d8; } .page-link[aria-current="page"] { background:#f8f8f9; color:#202333; font-weight:600; } .page-link[aria-disabled="true"] { color:#b7b7bc; } .page-ellipsis { color:#737373; }
+        @media(max-width:900px) { .pagination { justify-content:center; gap:14px; padding:14px; } .pagination-actions { order:3; width:100%; justify-content:center; gap:5px; flex-wrap:wrap; } }
+
         .sort-hint { color:#747887; font-size:13px; margin:0 0 12px; }
         .sortable .sort-header { color:inherit; display:inline-block; }
         .sortable .sort-header::after { margin-left:3px; content:'\25B8'; font-size:1.2em; color:#747887; transition:color .2s ease-in-out; }
@@ -30,6 +40,9 @@
 
             <p class="subtitle">Riwayat presensi pribadi Anda.</p>
             <form id="attendance-filters" method="GET" action="{{ route('attendances.index') }}">
+                @if (request()->filled('per_page') && is_scalar(request('per_page')))
+                    <input type="hidden" name="per_page" value="{{ request('per_page') }}">
+                @endif
                 <input type="hidden" name="sort" value="{{ $sorting['sort'] }}">
                 <input type="hidden" name="direction" value="{{ $sorting['direction'] }}">
                 <div class="toolbar">
@@ -86,12 +99,15 @@
                     </ul>
                 </div>
             @elseif ($attendances->isEmpty())
-                <p class="empty-state">{{ $hasFilters ? 'Tidak ada presensi yang cocok dengan filter.' : 'Belum ada data presensi.' }}</p>
+                <p class="empty-state">{{ $attendances->total() > 0 ? 'Tidak ada presensi pada halaman ini. Kembali ke halaman sebelumnya.' : ($hasFilters ? 'Tidak ada presensi yang cocok dengan filter.' : 'Belum ada data presensi.') }}</p>
             @else
                 @php
                     $activeDirection = $sorting['direction'] ?: 'desc';
                     $nextDirection = $activeDirection === 'asc' ? 'desc' : 'asc';
                     $activeFilters = array_filter($filters, fn ($value) => $value !== '');
+                    if (request()->filled('per_page')) {
+                        $activeFilters['per_page'] = $attendances->perPage();
+                    }
                 @endphp
                 <p class="sort-hint">Klik Tanggal untuk membalik urutan.</p>
                 <div class="table-wrap"><table class="sortable">
@@ -119,6 +135,59 @@
                         @endforeach
                     </tbody>
                 </table></div>
+            @endif
+            @if (! $filterErrors->any() && $attendances->total() > 0)
+                <nav class="pagination" aria-label="Navigasi halaman presensi">
+                    <form method="GET" action="{{ route('attendances.index') }}">
+                        @foreach (request()->except('page') as $key => $value)
+                            @if (is_scalar($value)) <input type="hidden" name="{{ $key }}" value="{{ $value }}"> @endif
+                        @endforeach
+                        <label for="pagination-page">Halaman <input id="pagination-page" aria-label="Nomor halaman" type="number" name="page" min="1" max="{{ $attendances->lastPage() }}" value="{{ $attendances->currentPage() }}"></label>
+                        <span>dari {{ $attendances->lastPage() }}</span>
+                        <button type="submit" hidden>Buka halaman</button>
+                    </form>
+                    <div class="pagination-actions">
+                        @foreach ([['Pertama', '«', $attendances->url(1), $attendances->onFirstPage(), null], ['Sebelumnya', '‹', $attendances->previousPageUrl(), $attendances->onFirstPage(), 'prev']] as [$label, $icon, $url, $disabled, $relation])
+                            @if ($disabled)
+                                <span class="page-link page-arrow" aria-disabled="true" aria-label="{{ $label }}">{{ $icon }}</span>
+                            @else
+                                <a class="page-link page-arrow" href="{{ $url }}" aria-label="{{ $label }}" title="{{ $label }}" @if ($relation) rel="{{ $relation }}" @endif>{{ $icon }}</a>
+                            @endif
+                        @endforeach
+                        @foreach (array_filter(Illuminate\Pagination\UrlWindow::make($attendances->onEachSide(1))) as $pages)
+                            @if (! $loop->first) <span class="page-ellipsis" aria-hidden="true">…</span> @endif
+                            @if (is_array($pages))
+                                @foreach ($pages as $page => $url)
+                                    @if ($page === $attendances->currentPage())
+                                        <span class="page-link" aria-current="page" aria-label="Halaman {{ $page }}">{{ $page }}</span>
+                                    @else
+                                        <a class="page-link" href="{{ $url }}" aria-label="Halaman {{ $page }}">{{ $page }}</a>
+                                    @endif
+                                @endforeach
+
+                            @endif
+                        @endforeach
+                        @foreach ([['Berikutnya', '›', $attendances->nextPageUrl(), ! $attendances->hasMorePages(), 'next'], ['Terakhir', '»', $attendances->url($attendances->lastPage()), ! $attendances->hasMorePages(), null]] as [$label, $icon, $url, $disabled, $relation])
+                            @if ($disabled)
+                                <span class="page-link page-arrow" aria-disabled="true" aria-label="{{ $label }}">{{ $icon }}</span>
+                            @else
+                                <a class="page-link page-arrow" href="{{ $url }}" aria-label="{{ $label }}" title="{{ $label }}" @if ($relation) rel="{{ $relation }}" @endif>{{ $icon }}</a>
+                            @endif
+                        @endforeach
+                    </div>
+                    <form method="GET" action="{{ route('attendances.index') }}">
+                        @foreach (request()->except(['page', 'per_page']) as $key => $value)
+                            @if (is_scalar($value)) <input type="hidden" name="{{ $key }}" value="{{ $value }}"> @endif
+                        @endforeach
+                        <label for="pagination-size">Baris per halaman
+                            <select id="pagination-size" name="per_page" onchange="this.form.submit()">
+                                @foreach ([10, 25, 50] as $size)
+                                    <option value="{{ $size }}" @selected($attendances->perPage() === $size)>{{ $size }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                    </form>
+                </nav>
             @endif
         </section>
     </main>
