@@ -120,7 +120,7 @@ class AttendancePaginationTest extends TestCase
         $response->assertViewHas('attendances', fn ($rows) => $rows->perPage() === 25 && $rows->count() === 25);
         $this->get(route('attendances.index', ['per_page' => 50]))->assertOk()
             ->assertViewHas('attendances', fn ($rows) => $rows->perPage() === 50 && $rows->count() === 26);
-        foreach ([1, 100, 'abc', ['10']] as $invalid) {
+        foreach ([1, 101, 'abc', ['10']] as $invalid) {
             $this->get(route('attendances.index', ['per_page' => $invalid]))->assertStatus(422);
         }
         $response = $this->get(route('attendances.index', ['per_page' => 10, 'page' => 2]))->assertOk();
@@ -146,9 +146,9 @@ class AttendancePaginationTest extends TestCase
             ->assertSee('Tidak ada presensi yang cocok dengan filter.')->assertDontSee('aria-label="Navigasi halaman presensi"', false);
         $this->get(route('attendances.index', ['exact_date' => '2026-09-01']))->assertOk()
             ->assertViewHas('attendances', fn ($rows) => $rows->total() === 1 && $rows->count() === 1);
-        $response = $this->get(route('attendances.index', ['page' => 4]))->assertOk()
-            ->assertSee('Tidak ada presensi pada halaman ini.')->assertDontSee('Belum ada data presensi.');
-        $this->get($this->link($response, 'prev'))->assertOk()->assertViewHas('attendances', fn ($rows) => $rows->count() === 6);
+        $this->get(route('attendances.index', ['page' => 4]))->assertStatus(422)
+            ->assertSee('Nomor halaman tidak tersedia. Pilih halaman 1–3.')
+            ->assertDontSee('aria-label="Navigasi halaman presensi"', false);
         $this->get(route('attendances.index', ['status' => 'invalid', 'page' => 2]))->assertStatus(422);
         $this->actingAs(User::factory()->create())->get(route('attendances.index'))->assertOk()
             ->assertSee('Belum ada data presensi.')->assertDontSee('aria-label="Navigasi halaman presensi"', false);

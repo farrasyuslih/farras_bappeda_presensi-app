@@ -15,6 +15,8 @@ class CheckOutController extends Controller
             'check_in_time' => ['prohibited'],
             'check_out_time' => ['prohibited'],
             'status' => ['prohibited'],
+        ], [
+            'prohibited' => ':attribute ditentukan oleh server dan tidak boleh dikirim.',
         ]);
 
         $checkOut = now();

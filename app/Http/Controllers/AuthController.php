@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
-
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\View\View;
 
 class AuthController extends Controller
 {
@@ -22,10 +21,10 @@ class AuthController extends Controller
     {
         $credentials = $request->validate(
             [
-            'email' => ['required', 'email'],
-            'password' => ['required','string'],
-        ],
-        [
+                'email' => ['required', 'email'],
+                'password' => ['required', 'string'],
+            ],
+            [
                 'email.required' => 'Email wajib diisi.',
                 'email.email' => 'Format email tidak valid.',
                 'password.required' => 'Password wajib diisi.',
@@ -71,7 +70,7 @@ class AuthController extends Controller
             [
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-                'password' => ['required', 'confirmed', Password::min(8)],
+                'password' => ['required', 'string', 'confirmed', Password::min(8)],
             ],
             [
                 'name.required' => 'Nama wajib diisi.',
@@ -83,6 +82,7 @@ class AuthController extends Controller
                 'email.max' => 'Email tidak boleh lebih dari 255 karakter.',
                 'email.unique' => 'Email sudah digunakan.',
                 'password.required' => 'Password wajib diisi.',
+                'password.string' => 'Password harus berupa teks.',
                 'password.confirmed' => 'Konfirmasi password tidak cocok.',
                 'password.min' => 'Password harus memiliki minimal 8 karakter.',
             ]

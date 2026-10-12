@@ -17,6 +17,10 @@ class AbsenceController extends Controller
             'attendance_date' => ['prohibited'],
             'check_in_time' => ['prohibited'],
             'check_out_time' => ['prohibited'],
+        ], [
+            'prohibited' => ':attribute ditentukan oleh server dan tidak boleh dikirim.',
+            'status.required' => 'Pilih status izin atau sakit.',
+            'status.in' => 'Status hanya boleh izin atau sakit.',
         ]);
 
         $date = now()->toDateString();

@@ -181,7 +181,7 @@
                         @endforeach
                         <label for="pagination-size">Baris per halaman
                             <select id="pagination-size" name="per_page" onchange="this.form.submit()">
-                                @foreach ([10, 25, 50] as $size)
+                                @foreach ([10, 25, 50, 100] as $size)
                                     <option value="{{ $size }}" @selected($attendances->perPage() === $size)>{{ $size }}</option>
                                 @endforeach
                             </select>

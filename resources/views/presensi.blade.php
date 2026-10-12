@@ -183,7 +183,7 @@
             <form method="POST" action="{{ route('check-in.store') }}" style="margin-top: 20px">
                 @csrf
                 <button class="check-in-button" type="submit" @disabled($todayAttendance)>
-                    {{ $todayAttendance ? 'Sudah check-in hari ini' : 'Check-in' }}
+                    {{ $todayAttendance ? ($todayAttendance->check_in_time ? 'Sudah check-in hari ini' : 'Presensi hari ini sudah tercatat') : 'Check-in' }}
                 </button>
             </form>
 

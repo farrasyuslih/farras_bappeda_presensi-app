@@ -13,8 +13,9 @@ class AttendanceController extends Controller
         $keys = ['name', 'exact_date', 'start_date', 'end_date', 'month', 'year', 'status'];
         $sortingKeys = ['sort', 'direction'];
         $input = $request->only(array_merge($keys, $sortingKeys));
-        $validator = Validator::make($input + $request->only('per_page'), [
-            'per_page' => ['nullable', 'integer', Rule::in([10, 25, 50])],
+        $validator = Validator::make($input + $request->only(['per_page', 'page']), [
+            'page' => ['nullable', 'integer', 'min:1', 'max:2147483647'],
+            'per_page' => ['nullable', 'integer', Rule::in([10, 25, 50, 100])],
             'sort' => ['nullable', 'string', Rule::in(['date'])],
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'name' => ['nullable', 'string', 'max:255'],
@@ -26,12 +27,15 @@ class AttendanceController extends Controller
             'status' => ['nullable', Rule::in(['hadir', 'terlambat', 'izin', 'sakit'])],
         ], [
             'string' => ':attribute harus berupa teks.',
-            'max' => ':attribute maksimal :max karakter.',
+            'max' => ':attribute maksimal :max.',
+            'name.max' => 'Nama maksimal 255 karakter.',
+            'min' => ':attribute minimal :min.',
             'date_format' => ':attribute harus berupa tanggal valid dengan format YYYY-MM-DD.',
             'integer' => ':attribute harus berupa bilangan bulat.',
             'between' => ':attribute harus antara :min dan :max.',
             'in' => ':attribute tidak valid.',
         ], [
+            'page' => 'Nomor halaman',
             'per_page' => 'Baris per halaman',
             'sort' => 'Kolom sorting', 'direction' => 'Arah sorting',
             'name' => 'Nama', 'exact_date' => 'Tanggal tepat',
@@ -99,10 +103,23 @@ class AttendanceController extends Controller
         if ($filled('status')) {
             $query->where('status', $filters['status']);
         }
+        $perPage = (int) ($request->input('per_page') ?: 10);
+        $page = (int) ($request->input('page') ?: 1);
+        $lastPage = max(1, (int) ceil((clone $query)->count() / $perPage));
+
+        if ($page > $lastPage) {
+            $validator->errors()->add('page', 'Nomor halaman tidak tersedia. Pilih halaman 1–'.$lastPage.'.');
+
+            return response()->view('attendances.list_presensi', [
+                'attendances' => collect(), 'filters' => $filters, 'sorting' => $sorting,
+                'hasFilters' => $hasFilters, 'filterErrors' => $validator->errors(),
+            ], 422);
+        }
+
         // Sort only the authenticated employee's dates; ID keeps ties deterministic.
         $direction = $sorting['direction'] ?: 'desc';
         $attendances = $query->orderBy('attendance_date', $direction)
-            ->orderByDesc('attendances.id')->paginate((int) ($request->input('per_page') ?: 10))->withQueryString();
+            ->orderByDesc('attendances.id')->paginate($perPage)->withQueryString();
 
         return view('attendances.list_presensi', [
             'attendances' => $attendances, 'filters' => $filters, 'sorting' => $sorting,
