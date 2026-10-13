@@ -103,9 +103,17 @@ class AttendanceController extends Controller
         if ($filled('status')) {
             $query->where('status', $filters['status']);
         }
+        // Reuse the filtered personal dataset before sorting or pagination.
+        $counts = (clone $query)->reorder()->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')->pluck('total', 'status');
+        $summary = ['total' => (int) $counts->sum()];
+        foreach (['hadir', 'terlambat', 'izin', 'sakit'] as $status) {
+            $summary[$status] = (int) ($counts[$status] ?? 0);
+        }
+
         $perPage = (int) ($request->input('per_page') ?: 10);
         $page = (int) ($request->input('page') ?: 1);
-        $lastPage = max(1, (int) ceil((clone $query)->count() / $perPage));
+        $lastPage = max(1, (int) ceil($summary['total'] / $perPage));
 
         if ($page > $lastPage) {
             $validator->errors()->add('page', 'Nomor halaman tidak tersedia. Pilih halaman 1–'.$lastPage.'.');
@@ -122,7 +130,7 @@ class AttendanceController extends Controller
             ->orderByDesc('attendances.id')->paginate($perPage)->withQueryString();
 
         return view('attendances.list_presensi', [
-            'attendances' => $attendances, 'filters' => $filters, 'sorting' => $sorting,
+            'summary' => $summary, 'attendances' => $attendances, 'filters' => $filters, 'sorting' => $sorting,
             'hasFilters' => $hasFilters, 'filterErrors' => $validator->errors(),
         ]);
     }

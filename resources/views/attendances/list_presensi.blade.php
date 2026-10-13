@@ -23,6 +23,9 @@
         a.page-link:hover { background:#f4f0ff; color:#6740d8; } .page-link[aria-current="page"] { background:#f8f8f9; color:#202333; font-weight:600; } .page-link[aria-disabled="true"] { color:#b7b7bc; } .page-ellipsis { color:#737373; }
         @media(max-width:900px) { .pagination { justify-content:center; gap:14px; padding:14px; } .pagination-actions { order:3; width:100%; justify-content:center; gap:5px; flex-wrap:wrap; } }
 
+        .attendance-summary { display:flex; flex-wrap:wrap; gap:12px 28px; margin:0 0 18px; padding:14px 16px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px; }
+        .attendance-summary div { flex:1; min-width:90px; } .attendance-summary dt { color:#747887; font-size:13px; } .attendance-summary dd { margin:5px 0 0; font-size:22px; font-weight:600; }
+        .summary-note { font-size:13px; color:#747887; margin:0 0 10px; }
         .sort-hint { color:#747887; font-size:13px; margin:0 0 12px; }
         .sortable .sort-header { color:inherit; display:inline-block; }
         .sortable .sort-header::after { margin-left:3px; content:'\25B8'; font-size:1.2em; color:#747887; transition:color .2s ease-in-out; }
@@ -88,6 +91,15 @@
                     <div class="modal-foot"><button type="button" id="clear-date-filter">Hapus tanggal</button><div class="modal-actions"><button type="button" id="cancel-date-filter">Batal</button><button type="submit" class="primary">Terapkan filter</button></div></div>
                 </dialog>
             </form>
+
+            @if (! $filterErrors->any())
+                <p class="summary-note">Rekap seluruh hasil{{ $hasFilters ? ' sesuai filter aktif' : ' presensi pribadi' }}.</p>
+                <dl class="attendance-summary" aria-label="Rekap presensi">
+                    @foreach (['total' => 'Total', 'hadir' => 'Hadir', 'terlambat' => 'Terlambat', 'izin' => 'Izin', 'sakit' => 'Sakit'] as $key => $label)
+                        <div><dt>{{ $label }}</dt><dd>{{ $summary[$key] }}</dd></div>
+                    @endforeach
+                </dl>
+            @endif
 
             @if ($filterErrors->any())
                 <div class="errors" role="alert">
