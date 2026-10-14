@@ -93,6 +93,7 @@
             </form>
 
             @if (! $filterErrors->any())
+                <p><a href="{{ route('attendances.export.pdf', array_filter(array_merge($filters, $sorting), fn ($value) => $value !== '')) }}" title="Unduh seluruh hasil laporan sesuai filter yang sudah diterapkan">Ekspor PDF</a></p>
                 <p class="summary-note">Rekap seluruh hasil{{ $hasFilters ? ' sesuai filter aktif' : ' presensi pribadi' }}.</p>
                 <dl class="attendance-summary" aria-label="Rekap presensi">
                     @foreach (['total' => 'Total', 'hadir' => 'Hadir', 'terlambat' => 'Terlambat', 'izin' => 'Izin', 'sakit' => 'Sakit'] as $key => $label)

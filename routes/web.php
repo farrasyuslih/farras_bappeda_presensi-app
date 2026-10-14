@@ -30,6 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/check-in', [CheckInController::class, 'store'])->name('check-in.store');
     Route::post('/check-out', [CheckOutController::class, 'store'])->name('check-out.store');
     Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
+    Route::get('/attendances/export/pdf', [AttendanceController::class, 'export'])->name('attendances.export.pdf');
     Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendances.index');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

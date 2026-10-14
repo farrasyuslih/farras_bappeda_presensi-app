@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -9,6 +10,16 @@ use Illuminate\Validation\Rule;
 class AttendanceController extends Controller
 {
     public function index(Request $request)
+    {
+        return $this->report($request);
+    }
+
+    public function export(Request $request)
+    {
+        return $this->report($request, true);
+    }
+
+    private function report(Request $request, bool $export = false)
     {
         $keys = ['name', 'exact_date', 'start_date', 'end_date', 'month', 'year', 'status'];
         $sortingKeys = ['sort', 'direction'];
@@ -103,6 +114,18 @@ class AttendanceController extends Controller
         if ($filled('status')) {
             $query->where('status', $filters['status']);
         }
+        if ($export) {
+            $attendances = $query->orderBy('attendance_date', $sorting['direction'] ?: 'desc')
+                ->orderByDesc('attendances.id')->get();
+            $filename = 'laporan-presensi-'.$request->user()->id.'-'.now('Asia/Jakarta')->format('Ymd-His').'.pdf';
+
+            return Pdf::loadView('attendances.pdf', [
+                'attendances' => $attendances, 'filters' => $filters, 'sorting' => $sorting,
+                'employee' => $request->user(), 'generatedAt' => now('Asia/Jakarta'),
+            ])->setPaper('a4')->setOption(['isRemoteEnabled' => false, 'isJavascriptEnabled' => false])
+                ->download($filename)->header('Cache-Control', 'private, no-store');
+        }
+
         // Reuse the filtered personal dataset before sorting or pagination.
         $counts = (clone $query)->reorder()->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')->pluck('total', 'status');
