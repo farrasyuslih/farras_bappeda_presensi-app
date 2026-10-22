@@ -20,8 +20,8 @@
     <div class="footer">Presensi pribadi - Seluruh hasil filter | Halaman <span class="page"></span></div>
     <h1>Laporan Presensi Pegawai Bappeda DKI Jakarta</h1>
     <div class="meta">
-        <p>Pegawai: {{ $employee->name }}</p>
-        <p>Dicetak: {{ $generatedAt->format('d-m-Y H:i:s') }} WIB</p>
+        <p>Nama pegawai: {{ $employee->name }}</p>
+        <p>Waktu dicetak: {{ $generatedAt->format('d-m-Y H:i:s') }} WIB</p>
         <p>Filter aktif:
             @php($labels = ['name' => 'Nama', 'exact_date' => 'Tanggal tepat', 'start_date' => 'Tanggal awal', 'end_date' => 'Tanggal akhir', 'month' => 'Bulan', 'year' => 'Tahun', 'status' => 'Status'])
             @forelse (array_filter($filters, fn ($value) => $value !== '') as $key => $value)
@@ -31,7 +31,7 @@
             @endforelse
         </p>
         <p>Urutan tanggal: {{ ($sorting['direction'] ?: 'desc') === 'asc' ? 'Terlama' : 'Terbaru' }}</p>
-        <p>Total hasil: {{ $attendances->count() }}</p>
+        <p>Total hasil presensi: {{ $attendances->count() }}</p>
     </div>
     <table>
         <thead><tr><th style="width: 25%">Nama</th><th style="width: 17%">Tanggal</th><th style="width: 15%">Check-in</th><th style="width: 25%">Check-out</th><th style="width: 18%">Status</th></tr></thead>
