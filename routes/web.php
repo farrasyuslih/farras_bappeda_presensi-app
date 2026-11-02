@@ -5,6 +5,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\CheckOutController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -19,13 +20,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        $todayAttendance = auth()->user()->attendances()
-            ->whereDate('attendance_date', now()->toDateString())
-            ->first();
-
-        return view('presensi', compact('todayAttendance'));
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::post('/check-in', [CheckInController::class, 'store'])->name('check-in.store');
     Route::post('/check-out', [CheckOutController::class, 'store'])->name('check-out.store');

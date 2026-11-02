@@ -36,6 +36,7 @@
     </style>
 </head>
 <body>
+    @include('partials.navigation')
     <main class="container">
         <p><a href="{{ route('dashboard') }}">Kembali ke dashboard</a></p>
         <section class="card">

@@ -1,0 +1,4 @@
+<section class="dashboard-panel"><div class="recent-head"><div><h2>Presensi terbaru</h2><p class="muted">Maksimal 10 catatan pribadi, berdasarkan tanggal presensi terbaru.</p></div><a href="{{ route('attendances.index') }}">Lihat seluruh presensi →</a></div><div class="recent-table"><table><thead><tr><th>Tanggal</th><th>Check-in</th><th>Check-out</th><th>Status</th></tr></thead><tbody>
+@forelse($recentAttendances as $attendance)<tr><td>{{ $attendance->attendance_date }}</td><td>{{ $attendance->check_in_time ?? '—' }}</td><td>{{ $attendance->check_out_time ?? ($attendance->check_in_time ? 'Belum check-out' : '—') }}</td><td><span class="status-pill {{ $attendance->status }}">{{ ucfirst($attendance->status) }}</span></td></tr>
+@empty<tr><td colspan="4">Belum ada riwayat presensi.</td></tr>@endforelse
+</tbody></table></div></section>

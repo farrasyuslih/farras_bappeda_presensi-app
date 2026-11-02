@@ -124,6 +124,7 @@
 </head>
 
 <body>
+    @include('partials.navigation')
     <nav class="navbar">
         <h1>Sistem Presensi</h1>
 
@@ -149,19 +150,9 @@
             </div>
         @endif
 
-        <section class="card">
-            <div class="user-information">
-                <h2>Selamat datang, {{ auth()->user()->name }}</h2>
-
-                <p>
-                    Email: {{ auth()->user()->email }}
-                </p>
-
-                <p>
-                    Role: {{ ucfirst(auth()->user()->role) }}
-                </p>
-            </div>
-
+        @include('partials.personal-overview')
+        <section class="card" id="presensi-hari-ini">
+            <h2>Presensi hari ini</h2>
             <p><a href="{{ route('attendances.index') }}">Lihat riwayat presensi</a></p>
 
             @if ($todayAttendance)
@@ -204,6 +195,7 @@
                 </form>
             @endif
         </section>
+        @include('partials.recent-attendances')
     </main>
 </body>
 </html>
