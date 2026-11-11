@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AbsenceController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckInController;
@@ -22,11 +23,20 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
-    Route::post('/check-in', [CheckInController::class, 'store'])->name('check-in.store');
-    Route::post('/check-out', [CheckOutController::class, 'store'])->name('check-out.store');
-    Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
     Route::get('/attendances/export/pdf', [AttendanceController::class, 'export'])->name('attendances.export.pdf');
     Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendances.index');
+
+    Route::middleware('employee')->group(function () {
+        Route::post('/check-in', [CheckInController::class, 'store'])->name('check-in.store');
+        Route::post('/check-out', [CheckOutController::class, 'store'])->name('check-out.store');
+        Route::post('/absence', [AbsenceController::class, 'store'])->name('absence.store');
+    });
+
+    Route::prefix('admin')->middleware('admin')->group(function () {
+        Route::get('/dashboard', AdminDashboardController::class)->name('admin.dashboard');
+        Route::get('/attendances', [AttendanceController::class, 'adminIndex'])->name('admin.attendances.index');
+        Route::get('/attendances/export/pdf', [AttendanceController::class, 'adminExport'])->name('admin.attendances.export.pdf');
+    });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

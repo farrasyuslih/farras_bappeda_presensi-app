@@ -38,12 +38,12 @@
 <body>
     @include('partials.navigation')
     <main class="container">
-        <p><a href="{{ route('dashboard') }}">Kembali ke dashboard</a></p>
+        <p><a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard') }}">Kembali ke dashboard</a></p>
         <section class="card">
-            <h1>Riwayat Presensi Saya</h1>
+            <h1>{{ $reportTitle ?? 'Riwayat Presensi Saya' }}</h1>
 
-            <p class="subtitle">Riwayat presensi pribadi Anda.</p>
-            <form id="attendance-filters" method="GET" action="{{ route('attendances.index') }}">
+            <p class="subtitle">{{ $reportSubtitle ?? 'Riwayat presensi pribadi Anda.' }}</p>
+            <form id="attendance-filters" method="GET" action="{{ route($reportRoute ?? 'attendances.index') }}">
                 @if (request()->filled('per_page') && is_scalar(request('per_page')))
                     <input type="hidden" name="per_page" value="{{ request('per_page') }}">
                 @endif
@@ -65,7 +65,7 @@
                         @endif
                     </select>
                     <button type="submit" class="primary">Cari</button>
-                    <a class="reset" href="{{ route('attendances.index') }}" title="Hapus semua filter dan kembalikan urutan awal">Reset</a>
+                    <a class="reset" href="{{ route($reportRoute ?? 'attendances.index') }}" title="Hapus semua filter dan kembalikan urutan awal">Reset</a>
                 </div>
                 @if (collect($filters)->except(['name', 'status'])->contains(fn ($value) => $value !== ''))
                     <p class="filter-summary">Tanggal aktif:
@@ -94,8 +94,8 @@
             </form>
 
             @if (! $filterErrors->any())
-                <p><a href="{{ route('attendances.export.pdf', array_filter(array_merge($filters, $sorting), fn ($value) => $value !== '')) }}" title="Unduh seluruh hasil laporan sesuai filter yang sudah diterapkan">Ekspor PDF</a></p>
-                <p class="summary-note">Rekap seluruh hasil{{ $hasFilters ? ' sesuai filter aktif' : ' presensi pribadi' }}.</p>
+                @if ($canExportPdf ?? true)<p><a href="{{ route($exportRoute ?? 'attendances.export.pdf', array_filter(array_merge($filters, $sorting), fn ($value) => $value !== '')) }}" title="Unduh seluruh hasil laporan sesuai filter yang sudah diterapkan">Ekspor PDF</a></p>@endif
+                <p class="summary-note">Rekap seluruh hasil{{ $hasFilters ? ' sesuai filter aktif' : (($reportRoute ?? 'attendances.index') === 'admin.attendances.index' ? ' presensi pegawai' : ' presensi pribadi') }}.</p>
                 <dl class="attendance-summary" aria-label="Rekap presensi">
                     @foreach (['total' => 'Total', 'hadir' => 'Hadir', 'terlambat' => 'Terlambat', 'izin' => 'Izin', 'sakit' => 'Sakit'] as $key => $label)
                         <div><dt>{{ $label }}</dt><dd>{{ $summary[$key] }}</dd></div>
@@ -116,21 +116,26 @@
                 <p class="empty-state">{{ $attendances->total() > 0 ? 'Tidak ada presensi pada halaman ini. Kembali ke halaman sebelumnya.' : ($hasFilters ? 'Tidak ada presensi yang cocok dengan filter.' : 'Belum ada data presensi.') }}</p>
             @else
                 @php
+                    $activeSort = $sorting['sort'] ?: 'date';
                     $activeDirection = $sorting['direction'] ?: 'desc';
-                    $nextDirection = $activeDirection === 'asc' ? 'desc' : 'asc';
+                    $nameNextDirection = $activeSort === 'name' && $activeDirection === 'asc' ? 'desc' : 'asc';
+                    $dateNextDirection = $activeSort === 'date' && $activeDirection === 'asc' ? 'desc' : 'asc';
                     $activeFilters = array_filter($filters, fn ($value) => $value !== '');
                     if (request()->filled('per_page')) {
                         $activeFilters['per_page'] = $attendances->perPage();
                     }
                 @endphp
-                <p class="sort-hint">Klik Tanggal untuk membalik urutan.</p>
+                <p class="sort-hint">Klik Nama atau Tanggal untuk mengubah urutan.</p>
                 <div class="table-wrap"><table class="sortable">
                     <thead>
                         <tr>
-                            <th scope="col">Nama</th>
-                            <th scope="col" class="{{ $activeDirection === 'asc' ? 'dir-u' : 'dir-d' }}" aria-sort="{{ $activeDirection === 'asc' ? 'ascending' : 'descending' }}">
-                                <a class="sort-header" href="{{ route('attendances.index', $activeFilters + ['sort' => 'date', 'direction' => $nextDirection]) }}" title="Urutkan Tanggal: {{ $nextDirection === 'asc' ? 'terlama dulu' : 'terbaru dulu' }}" aria-label="Urutkan Tanggal: {{ $nextDirection === 'asc' ? 'terlama dulu' : 'terbaru dulu' }}">Tanggal</a>
-                                <small class="sort-caption">{{ $activeDirection === 'asc' ? 'Terlama' : 'Terbaru' }}</small>
+                            <th scope="col" class="{{ $activeSort === 'name' ? ($activeDirection === 'asc' ? 'dir-u' : 'dir-d') : '' }}" aria-sort="{{ $activeSort === 'name' ? ($activeDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                                <a class="sort-header" href="{{ route($reportRoute ?? 'attendances.index', $activeFilters + ['sort' => 'name', 'direction' => $nameNextDirection]) }}" title="Urutkan Nama: {{ $nameNextDirection === 'asc' ? 'A–Z' : 'Z–A' }}" aria-label="Urutkan Nama: {{ $nameNextDirection === 'asc' ? 'A–Z' : 'Z–A' }}">Nama</a>
+                                @if ($activeSort === 'name')<small class="sort-caption">{{ $activeDirection === 'asc' ? 'A–Z' : 'Z–A' }}</small>@endif
+                            </th>
+                            <th scope="col" class="{{ $activeSort === 'date' ? ($activeDirection === 'asc' ? 'dir-u' : 'dir-d') : '' }}" aria-sort="{{ $activeSort === 'date' ? ($activeDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                                <a class="sort-header" href="{{ route($reportRoute ?? 'attendances.index', $activeFilters + ['sort' => 'date', 'direction' => $dateNextDirection]) }}" title="Urutkan Tanggal: {{ $dateNextDirection === 'asc' ? 'terlama dulu' : 'terbaru dulu' }}" aria-label="Urutkan Tanggal: {{ $dateNextDirection === 'asc' ? 'terlama dulu' : 'terbaru dulu' }}">Tanggal</a>
+                                @if ($activeSort === 'date')<small class="sort-caption">{{ $activeDirection === 'asc' ? 'Terlama' : 'Terbaru' }}</small>@endif
                             </th>
                             <th>Check-in</th>
                             <th>Check-out</th>
@@ -152,7 +157,7 @@
             @endif
             @if (! $filterErrors->any() && $attendances->total() > 0)
                 <nav class="pagination" aria-label="Navigasi halaman presensi">
-                    <form method="GET" action="{{ route('attendances.index') }}">
+                    <form method="GET" action="{{ route($reportRoute ?? 'attendances.index') }}">
                         @foreach (request()->except('page') as $key => $value)
                             @if (is_scalar($value)) <input type="hidden" name="{{ $key }}" value="{{ $value }}"> @endif
                         @endforeach
@@ -189,7 +194,7 @@
                             @endif
                         @endforeach
                     </div>
-                    <form method="GET" action="{{ route('attendances.index') }}">
+                    <form method="GET" action="{{ route($reportRoute ?? 'attendances.index') }}">
                         @foreach (request()->except(['page', 'per_page']) as $key => $value)
                             @if (is_scalar($value)) <input type="hidden" name="{{ $key }}" value="{{ $value }}"> @endif
                         @endforeach

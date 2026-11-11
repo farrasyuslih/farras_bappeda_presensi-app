@@ -43,7 +43,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return redirect()
-            ->intended(route('dashboard'))
+            ->intended(Auth::user()->isAdmin() ? route('admin.dashboard') : route('dashboard'))
             ->with('success', 'Login berhasil.');
     }
 

@@ -61,7 +61,6 @@ class AttendanceSortingTest extends TestCase
     {
         return [
             [['sort' => 'status'], 'sort'],
-            [['sort' => 'name'], 'sort'],
             [['sort' => 'attendance_date desc; DROP TABLE users'], 'sort'],
             [['sort' => ['date']], 'sort'],
             [['direction' => 'up'], 'direction'],
@@ -136,7 +135,7 @@ class AttendanceSortingTest extends TestCase
         $response = $this->get($this->headerUrl($response, 'Tanggal'))->assertOk()
             ->assertSee('class="dir-d" aria-sort="descending"', false)
             ->assertViewHas('attendances', fn ($rows) => $rows->pluck('attendance_date')->all() === ['2026-09-30', '2026-09-01']);
-        $this->assertSame(0, substr_count($response->getContent(), 'aria-label="Urutkan Nama'));
+        $this->assertSame(1, substr_count($response->getContent(), 'aria-label="Urutkan Nama'));
         $response->assertViewHas('filters', fn ($values) => $values['name'] === 'Far' && $values['month'] === '9' && $values['status'] === 'hadir');
     }
 

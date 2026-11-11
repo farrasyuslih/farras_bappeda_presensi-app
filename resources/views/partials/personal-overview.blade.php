@@ -1,4 +1,4 @@
-<header class="dashboard-head"><div><h1>Dashboard Saya</h1><p>Ringkasan presensi pribadi Anda · Asia/Jakarta</p></div><span class="date-chip">{{ $today->format('d M Y') }}</span></header>
+<header class="dashboard-head"><div><h1>Dashboard Presensi Pegawai </h1><p>Ringkasan presensi pribadi Anda · Asia/Jakarta</p></div><span class="date-chip">{{ $today->format('d M Y') }}</span></header>
 <div class="personal-identity"><h2>{{ auth()->user()->name }}</h2><p class="muted">{{ auth()->user()->email }} · {{ ucfirst(auth()->user()->role) }}</p></div>
 <p class="muted">Bulan berjalan: {{ $today->copy()->startOfMonth()->format('d M Y') }} – {{ $today->format('d M Y') }}</p>
 <div class="metric-grid">
@@ -12,7 +12,7 @@
 <svg class="chart" viewBox="0 0 600 190" role="img" aria-labelledby="week-title week-desc"><title id="week-title">Tren check-in pribadi tujuh hari</title><desc id="week-desc">@foreach($week as $day){{ $day['date'] }}: {{ $day['status'] ?? 'Belum tercatat' }}. @endforeach</desc>
 @foreach([35,135] as $y)<line x1="35" y1="{{ $y }}" x2="565" y2="{{ $y }}" stroke="#e8eaf0"/>@endforeach
 <text x="12" y="40" fill="#777d8b" font-size="12">1</text><text x="12" y="140" fill="#777d8b" font-size="12">0</text>
-@foreach(['hadir' => '#7040db', 'terlambat' => '#bd475c'] as $status => $color)
+@foreach(['hadir' => '#0ac213', 'terlambat' => '#bd475c'] as $status => $color)
 <polyline fill="none" stroke="{{ $color }}" stroke-width="2.5" points="@foreach($week as $i => $day){{ 45 + $i * 85 }},{{ $day['status'] === $status ? 35 : 135 }} @endforeach"/>
 @foreach($week as $i => $day)<circle cx="{{ 45 + $i * 85 }}" cy="{{ $day['status'] === $status ? 35 : 135 }}" r="4" fill="{{ $color }}"/>@endforeach
 @endforeach

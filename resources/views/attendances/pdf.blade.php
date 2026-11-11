@@ -17,10 +17,14 @@
     </style>
 </head>
 <body>
-    <div class="footer">Presensi pribadi - Seluruh hasil filter | Halaman <span class="page"></span></div>
+    <div class="footer">{{ ($isAdminReport ?? false) ? 'Presensi pegawai' : 'Presensi pribadi' }} - Seluruh hasil filter | Halaman <span class="page"></span></div>
     <h1>Laporan Presensi Pegawai Bappeda DKI Jakarta</h1>
     <div class="meta">
-        <p>Nama pegawai: {{ $employee->name }}</p>
+        @if ($isAdminReport ?? false)
+            <p>Ruang lingkup: Seluruh pegawai</p>
+        @else
+            <p>Nama pegawai: {{ $employee->name }}</p>
+        @endif
         <p>Waktu dicetak: {{ $generatedAt->format('d-m-Y H:i:s') }} WIB</p>
         <p>Filter aktif:
             @php($labels = ['name' => 'Nama', 'exact_date' => 'Tanggal tepat', 'start_date' => 'Tanggal awal', 'end_date' => 'Tanggal akhir', 'month' => 'Bulan', 'year' => 'Tahun', 'status' => 'Status'])
@@ -44,7 +48,7 @@
                     <td>{{ $attendance->check_out_time ?? '-' }}@if ($attendance->checkoutLabel())<br><small>{{ $attendance->checkoutLabel() }}</small>@endif</td>
                     <td>{{ ucfirst($attendance->status) }}</td>
                 </tr>
-            @empty
+            @empty  
                 <tr><td colspan="5">Tidak ada data presensi sesuai filter.</td></tr>
             @endforelse
         </tbody>

@@ -3,14 +3,19 @@
 <button class="nav-backdrop" type="button" aria-label="Tutup menu" tabindex="-1"></button>
 <aside class="workspace-nav" id="workspace-nav" aria-label="Navigasi utama">
     <a class="workspace-brand" href="{{ route('dashboard') }}"><span class="brand-mark">P</span> Presensi<span class="brand-sub">BAPPEDA DKI Jakarta</span></a>
-    <p class="nav-caption">MENU PEGAWAI</p>
+    <p class="nav-caption">{{ auth()->user()->isAdmin() ? 'MENU ADMIN' : 'MENU PEGAWAI' }}</p>
     <nav>
-        <a href="{{ route('dashboard') }}" @if(request()->routeIs('dashboard')) aria-current="page" @endif>◫ <span>Dashboard</span></a>
-        <a href="{{ route('dashboard') }}#presensi-hari-ini">◷ <span>Presensi Saya</span></a>
-        <a href="{{ route('attendances.index') }}" @if(request()->routeIs('attendances.*')) aria-current="page" @endif>▤ <span>Laporan Presensi</span></a>
+        @if (auth()->user()->isAdmin())
+            <a href="{{ route('admin.dashboard') }}" @if(request()->routeIs('admin.dashboard')) aria-current="page" @endif>◫ <span>Dashboard Admin</span></a>
+            <a href="{{ route('admin.attendances.index') }}" @if(request()->routeIs('admin.attendances.*')) aria-current="page" @endif>▤ <span>Presensi Pegawai</span></a>
+        @else
+            <a href="{{ route('dashboard') }}" @if(request()->routeIs('dashboard')) aria-current="page" @endif>◫ <span>Dashboard</span></a>
+            <a href="{{ route('dashboard') }}#presensi-hari-ini">◷ <span>Presensi Saya</span></a>
+            <a href="{{ route('attendances.index') }}" @if(request()->routeIs('attendances.*')) aria-current="page" @endif>▤ <span>Laporan Presensi</span></a>
+        @endif
     </nav>
     <div class="nav-profile"><strong>{{ auth()->user()->name }}</strong><span>{{ auth()->user()->email }}</span>
-        <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit">Keluar ↗</button></form>
+        <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit">Keluar</button></form>
     </div>
 </aside>
 <script>

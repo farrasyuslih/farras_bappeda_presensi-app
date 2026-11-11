@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attendance;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -11,23 +13,42 @@ class AttendanceController extends Controller
 {
     public function index(Request $request)
     {
+        if ($request->user()->isAdmin()) {
+            return redirect()->route('admin.attendances.index');
+        }
+
         return $this->report($request);
+    }
+
+    public function adminIndex(Request $request)
+    {
+        return $this->report($request, scope: 'admin');
     }
 
     public function export(Request $request)
     {
+        if ($request->user()->isAdmin()) {
+            return redirect()->route('admin.attendances.export.pdf');
+        }
+
         return $this->report($request, true);
     }
 
-    private function report(Request $request, bool $export = false)
+    public function adminExport(Request $request)
     {
+        return $this->report($request, true, 'admin');
+    }
+
+    private function report(Request $request, bool $export = false, string $scope = 'personal')
+    {
+        $isAdminReport = $scope === 'admin';
         $keys = ['name', 'exact_date', 'start_date', 'end_date', 'month', 'year', 'status'];
         $sortingKeys = ['sort', 'direction'];
         $input = $request->only(array_merge($keys, $sortingKeys));
         $validator = Validator::make($input + $request->only(['per_page', 'page']), [
             'page' => ['nullable', 'integer', 'min:1', 'max:2147483647'],
             'per_page' => ['nullable', 'integer', Rule::in([10, 25, 50, 100])],
-            'sort' => ['nullable', 'string', Rule::in(['date'])],
+            'sort' => ['nullable', 'string', Rule::in(['date', 'name'])],
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'name' => ['nullable', 'string', 'max:255'],
             'exact_date' => ['nullable', 'date_format:Y-m-d'],
@@ -87,10 +108,17 @@ class AttendanceController extends Controller
             return response()->view('attendances.list_presensi', [
                 'attendances' => collect(), 'filters' => $filters, 'sorting' => $sorting,
                 'hasFilters' => $hasFilters, 'filterErrors' => $validator->errors(),
+                'reportTitle' => $isAdminReport ? 'Laporan Presensi Pegawai' : 'Riwayat Presensi Saya',
+                'reportSubtitle' => $isAdminReport ? 'Pantau presensi seluruh pegawai.' : 'Riwayat presensi pribadi Anda.',
+                'reportRoute' => $isAdminReport ? 'admin.attendances.index' : 'attendances.index',
+                'canExportPdf' => true,
+                'exportRoute' => $isAdminReport ? 'admin.attendances.export.pdf' : 'attendances.export.pdf',
             ], 422);
         }
 
-        $query = $request->user()->attendances()->with('user');
+        $query = $isAdminReport
+            ? Attendance::query()->whereHas('user', fn ($user) => $user->where('role', 'pegawai'))->with('user')
+            : $request->user()->attendances()->with('user');
         if ($filled('name')) {
             // Escape LIKE wildcards so the search text is treated literally.
             $name = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], mb_strtolower($filters['name']));
@@ -115,18 +143,27 @@ class AttendanceController extends Controller
             $query->where('status', $filters['status']);
         }
         if ($export) {
-            $attendances = $query->orderBy('attendance_date', $sorting['direction'] ?: 'desc')
-                ->orderByDesc('attendances.id')->get();
-            $filename = 'laporan-presensi-'.$request->user()->id.'-'.now('Asia/Jakarta')->format('Ymd-His').'.pdf';
+            $direction = $sorting['direction'] ?: 'desc';
+            if ($sorting['sort'] === 'name') {
+                $query->orderBy(User::select('name')->whereColumn('users.id', 'attendances.user_id'), $direction)
+                    ->orderByDesc('attendance_date');
+            } else {
+                $query->orderBy('attendance_date', $direction);
+            }
+            $attendances = $query->orderByDesc('attendances.id')->get();
+            $filename = ($isAdminReport ? 'laporan-presensi-pegawai' : 'laporan-presensi-'.$request->user()->id)
+                .'-'.now('Asia/Jakarta')->format('Ymd-His').'.pdf';
 
             return Pdf::loadView('attendances.pdf', [
                 'attendances' => $attendances, 'filters' => $filters, 'sorting' => $sorting,
-                'employee' => $request->user(), 'generatedAt' => now('Asia/Jakarta'),
+                'employee' => $isAdminReport ? null : $request->user(),
+                'isAdminReport' => $isAdminReport,
+                'generatedAt' => now('Asia/Jakarta'),
             ])->setPaper('a4')->setOption(['isRemoteEnabled' => false, 'isJavascriptEnabled' => false])
                 ->download($filename)->header('Cache-Control', 'private, no-store');
         }
 
-        // Reuse the filtered personal dataset before sorting or pagination.
+        // Reuse the full filtered dataset before sorting or pagination.
         $counts = (clone $query)->reorder()->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')->pluck('total', 'status');
         $summary = ['total' => (int) $counts->sum()];
@@ -144,17 +181,32 @@ class AttendanceController extends Controller
             return response()->view('attendances.list_presensi', [
                 'attendances' => collect(), 'filters' => $filters, 'sorting' => $sorting,
                 'hasFilters' => $hasFilters, 'filterErrors' => $validator->errors(),
+                'reportTitle' => $isAdminReport ? 'Laporan Presensi Pegawai' : 'Riwayat Presensi Saya',
+                'reportSubtitle' => $isAdminReport ? 'Pantau presensi seluruh pegawai.' : 'Riwayat presensi pribadi Anda.',
+                'reportRoute' => $isAdminReport ? 'admin.attendances.index' : 'attendances.index',
+                'canExportPdf' => true,
+                'exportRoute' => $isAdminReport ? 'admin.attendances.export.pdf' : 'attendances.export.pdf',
             ], 422);
         }
 
-        // Sort only the authenticated employee's dates; ID keeps ties deterministic.
+        // ID keeps rows from the same date in a deterministic order.
         $direction = $sorting['direction'] ?: 'desc';
-        $attendances = $query->orderBy('attendance_date', $direction)
-            ->orderByDesc('attendances.id')->paginate($perPage)->withQueryString();
+        if ($sorting['sort'] === 'name') {
+            $query->orderBy(User::select('name')->whereColumn('users.id', 'attendances.user_id'), $direction)
+                ->orderByDesc('attendance_date');
+        } else {
+            $query->orderBy('attendance_date', $direction);
+        }
+        $attendances = $query->orderByDesc('attendances.id')->paginate($perPage)->withQueryString();
 
         return view('attendances.list_presensi', [
             'summary' => $summary, 'attendances' => $attendances, 'filters' => $filters, 'sorting' => $sorting,
             'hasFilters' => $hasFilters, 'filterErrors' => $validator->errors(),
+            'reportTitle' => $isAdminReport ? 'Laporan Presensi Pegawai' : 'Riwayat Presensi Saya',
+            'reportSubtitle' => $isAdminReport ? 'Pantau presensi seluruh pegawai.' : 'Riwayat presensi pribadi Anda.',
+            'reportRoute' => $isAdminReport ? 'admin.attendances.index' : 'attendances.index',
+            'canExportPdf' => true,
+            'exportRoute' => $isAdminReport ? 'admin.attendances.export.pdf' : 'attendances.export.pdf',
         ]);
     }
 }
