@@ -28,9 +28,8 @@ export laporan presensi ke PDF.
 - Laravel **12**
 - Composer
 - Node.js dan npm
-- SQLite (konfigurasi default) atau database yang kompatibel dengan Laravel
-- Ekstensi PHP yang dibutuhkan Laravel, termasuk PDO SQLite jika memakai
-  SQLite
+- MariaDB/MySQL
+- Ekstensi PHP yang dibutuhkan Laravel, termasuk PDO MySQL
 
 Jika menggunakan XAMPP, aktifkan PHP/CLI yang sesuai dan pastikan perintah
 `php`, `composer`, `node`, dan `npm` dapat dijalankan dari terminal.
@@ -52,7 +51,13 @@ Pada Windows, salin `.env.example` sebagai `.env` secara manual jika perintah
 
 ### Konfigurasi environment
 
-Konfigurasi default pada `.env.example` menggunakan SQLite:
+Project menggunakan MariaDB/MySQL. Buat database terlebih dahulu, misalnya:
+
+```sql
+CREATE DATABASE presensi CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+Kemudian sesuaikan konfigurasi database pada `.env`:
 
 ```dotenv
 APP_NAME="Sistem Presensi"
@@ -60,20 +65,17 @@ APP_ENV=local
 APP_DEBUG=true
 APP_URL=http://localhost:8000
 
-DB_CONNECTION=sqlite
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=presensi
+DB_USERNAME=root
+DB_PASSWORD=
 ```
 
-Pastikan file database tersedia. Project ini sudah menyediakan
-`database/database.sqlite`; jika belum ada, buat file kosong:
-
-```bash
-touch database/database.sqlite
-```
-
-Untuk Windows, buat file kosong bernama `database.sqlite` di dalam folder
-`database`. Jika ingin menggunakan MySQL, ubah `DB_CONNECTION`, `DB_HOST`,
-`DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, dan `DB_PASSWORD` sesuai server
-database, lalu buat database tersebut sebelum menjalankan migrasi.
+Untuk MariaDB, gunakan `DB_CONNECTION=mysql` dan isi host, port, nama database,
+username, serta password sesuai konfigurasi MariaDB lokal Anda. Pastikan
+database dan layanan MariaDB/MySQL sudah aktif sebelum menjalankan migrasi.
 
 Jalankan migrasi:
 
@@ -116,19 +118,21 @@ php artisan serve
 
 Buka [http://localhost:8000](http://localhost:8000) di browser.
 
-Saat mengembangkan tampilan atau aset frontend, jalankan Vite pada terminal
-lain:
+Jika perlu mengembangkan atau membangun aset frontend, gunakan Node.js dan npm:
 
 ```bash
+npm install
 npm run dev
 ```
 
-Alternatifnya, Composer menyediakan perintah untuk menjalankan server,
-queue listener, log viewer, dan Vite secara bersamaan:
+Untuk build aset produksi:
 
 ```bash
-composer run dev
+npm run build
 ```
+
+`npm run dev` hanya diperlukan saat mengembangkan aset frontend. Aplikasi Laravel
+tetap dapat dijalankan dengan `php artisan serve`.
 
 ## Panduan pengguna (pegawai)
 
