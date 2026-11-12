@@ -8,15 +8,17 @@
 </div>
 <div class="dashboard-columns">
 <section class="dashboard-panel"><h2>Presensi tujuh hari terakhir</h2><p class="muted">{{ $week->first()['date'] }} – {{ $week->last()['date'] }} · Jumlah catatan per hari</p>
-<div class="chart-key"><span>● Hadir tepat waktu</span><span>● Terlambat</span></div>
-<svg class="chart" viewBox="0 0 600 190" role="img" aria-labelledby="week-title week-desc"><title id="week-title">Tren check-in pribadi tujuh hari</title><desc id="week-desc">@foreach($week as $day){{ $day['date'] }}: {{ $day['status'] ?? 'Belum tercatat' }}. @endforeach</desc>
+<div class="chart-key"><span>● Tepat waktu (≤ 07:30)</span><span>● Terlambat (&gt; 07:30)</span></div>
+<svg class="chart" viewBox="0 0 600 220" role="img" aria-labelledby="week-title week-desc"><title id="week-title">Tren check-in pribadi tujuh hari</title><desc id="week-desc">@foreach($week as $day){{ $day['date'] }}: {{ $day['status'] ?? 'Belum tercatat' }}. @endforeach</desc>
+<text x="35" y="15" fill="#777d8b" font-size="11">Jumlah check-in</text>
 @foreach([35,135] as $y)<line x1="35" y1="{{ $y }}" x2="565" y2="{{ $y }}" stroke="#e8eaf0"/>@endforeach
-<text x="12" y="40" fill="#777d8b" font-size="12">1</text><text x="12" y="140" fill="#777d8b" font-size="12">0</text>
+<text x="30" y="40" text-anchor="end" fill="#777d8b" font-size="12">1</text><text x="30" y="140" text-anchor="end" fill="#777d8b" font-size="12">0</text>
 @foreach(['hadir' => '#0ac213', 'terlambat' => '#bd475c'] as $status => $color)
 <polyline fill="none" stroke="{{ $color }}" stroke-width="2.5" points="@foreach($week as $i => $day){{ 45 + $i * 85 }},{{ $day['status'] === $status ? 35 : 135 }} @endforeach"/>
 @foreach($week as $i => $day)<circle cx="{{ 45 + $i * 85 }}" cy="{{ $day['status'] === $status ? 35 : 135 }}" r="4" fill="{{ $color }}"/>@endforeach
 @endforeach
 @foreach($week as $i => $day)<text x="{{ 45 + $i * 85 }}" y="170" text-anchor="middle" fill="#777d8b" font-size="11">{{ substr($day['date'], 5) }}</text>@endforeach
+<text x="300" y="205" text-anchor="middle" fill="#777d8b" font-size="11">Tanggal</text>
 </svg><p class="muted">Nilai 0 berarti tidak ada check-in pada kategori tersebut; bukan penetapan alpa. Izin/sakit tersedia pada rincian presensi.</p></section>
 <section class="dashboard-panel"><h2>Ketepatan waktu bulan ini</h2><div class="rate-ring" style="--rate:{{ $onTime ?? 0 }}"><span>{{ $onTime === null ? '—' : $onTime.'%' }}</span></div><p class="muted">{{ $onTime === null ? 'Belum ada data check-in bulan ini.' : 'Hadir tepat waktu ÷ seluruh check-in (hadir + terlambat).' }}</p><div class="status-row"><span>Check-in tercatat</span><strong>{{ $summary['hadir'] + $summary['terlambat'] }}</strong></div><div class="status-row"><span>Izin dan sakit</span><strong>{{ $summary['izin'] + $summary['sakit'] }}</strong></div></section>
 </div>

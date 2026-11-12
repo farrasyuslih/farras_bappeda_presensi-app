@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AbsenceController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminEmployeeController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CheckInController;
@@ -34,6 +35,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('admin')->middleware('admin')->group(function () {
         Route::get('/dashboard', AdminDashboardController::class)->name('admin.dashboard');
+        Route::get('/employees', [AdminEmployeeController::class, 'index'])->name('admin.employees.index');
         Route::get('/attendances', [AttendanceController::class, 'adminIndex'])->name('admin.attendances.index');
         Route::get('/attendances/export/pdf', [AttendanceController::class, 'adminExport'])->name('admin.attendances.export.pdf');
     });

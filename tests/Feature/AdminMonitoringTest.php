@@ -38,6 +38,40 @@ class AdminMonitoringTest extends TestCase
             ->assertSee('href="'.route('admin.attendances.export.pdf').'"', false);
     }
 
+    public function test_admin_dashboard_uses_business_rules_for_punctuality_late_employees_and_chart_scale(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-10 12:00:00', 'Asia/Jakarta'));
+        $admin = User::factory()->create(['role' => 'admin']);
+        $employees = User::factory()->count(10)->create();
+
+        foreach ($employees->take(7) as $employee) {
+            Attendance::factory()->create(['user_id' => $employee->id, 'attendance_date' => '2026-11-10', 'status' => 'hadir']);
+        }
+        Attendance::factory()->create(['user_id' => $employees[7]->id, 'attendance_date' => '2026-11-10', 'status' => 'terlambat']);
+        Attendance::factory()->create(['user_id' => $employees[7]->id, 'attendance_date' => '2026-11-09', 'status' => 'terlambat']);
+        Attendance::factory()->create(['user_id' => $employees[8]->id, 'attendance_date' => '2026-11-08', 'status' => 'terlambat']);
+        Attendance::factory()->izin()->create(['user_id' => $employees[8]->id, 'attendance_date' => '2026-11-10']);
+        Attendance::factory()->sakit()->create(['user_id' => $employees[9]->id, 'attendance_date' => '2026-11-10']);
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()
+            ->assertViewHas('summary', ['hadir' => 7, 'terlambat' => 3, 'izin' => 1, 'sakit' => 1])
+            ->assertViewHas('onTime', 70.0)
+            ->assertViewHas('lateEmployeeCount', 2)
+            ->assertViewHas('chartMax', 7)
+            ->assertViewHas('chartTicks', fn ($ticks) => $ticks->all() === [7, 4, 0]);
+    }
+
+    public function test_employee_list_is_admin_only_and_contains_only_employee_accounts(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $employee = User::factory()->create(['name' => 'Akun Pegawai']);
+        User::factory()->create(['name' => 'Akun Admin', 'role' => 'admin']);
+
+        $this->actingAs($admin)->get(route('admin.employees.index'))->assertOk()
+            ->assertSee('Akun Pegawai')->assertDontSee('Akun Admin');
+        $this->actingAs($employee)->get(route('admin.employees.index'))->assertForbidden();
+    }
+
     public function test_employee_cannot_open_admin_monitoring_or_bypass_with_query_input(): void
     {
         $employee = User::factory()->create();

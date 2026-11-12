@@ -62,8 +62,8 @@
         }
 
         input:focus {
-            border-color: #2563eb;
-            outline: 3px solid rgba(37, 99, 235, 0.15);
+            border-color: #6740d8;
+            outline: 3px solid rgba(103, 64, 216, 0.15);
         }
 
         input.is-invalid {
@@ -100,7 +100,7 @@
             padding: 12px;
             border: 0;
             border-radius: 8px;
-            background: #2563eb;
+            background: #6740d8;
             color: #ffffff;
             font-size: 15px;
             font-weight: 700;
@@ -108,7 +108,7 @@
         }
 
         button:hover {
-            background: #1d4ed8;
+            background: #5a38c2;
         }
     </style>
 </head>

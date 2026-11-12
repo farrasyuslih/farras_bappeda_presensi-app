@@ -7,6 +7,7 @@
     <nav>
         @if (auth()->user()->isAdmin())
             <a href="{{ route('admin.dashboard') }}" @if(request()->routeIs('admin.dashboard')) aria-current="page" @endif>◫ <span>Dashboard Admin</span></a>
+            <a href="{{ route('admin.employees.index') }}" @if(request()->routeIs('admin.employees.*')) aria-current="page" @endif>♙ <span>Daftar Pegawai</span></a>
             <a href="{{ route('admin.attendances.index') }}" @if(request()->routeIs('admin.attendances.*')) aria-current="page" @endif>▤ <span>Presensi Pegawai</span></a>
         @else
             <a href="{{ route('dashboard') }}" @if(request()->routeIs('dashboard')) aria-current="page" @endif>◫ <span>Dashboard</span></a>

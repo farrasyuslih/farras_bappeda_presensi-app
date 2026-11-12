@@ -44,10 +44,10 @@ class AdminDashboardController extends Controller
             ->selectRaw('status, COUNT(*) AS total')->groupBy('status')->pluck('total', 'status');
         $todaySummary = collect(['hadir', 'terlambat', 'izin', 'sakit'])
             ->mapWithKeys(fn ($status) => [$status => (int) ($todayCounts[$status] ?? 0)])->all();
-        $missingCheckOut = Attendance::query()
-            ->whereHas('user', fn ($query) => $query->where('role', 'pegawai'))
-            ->whereIn('status', ['hadir', 'terlambat'])
-            ->whereNull('check_out_time')->whereDate('attendance_date', '<', $today->toDateString())->count();
+        $lateEmployeeCount = (clone $monthAttendances)
+            ->where('status', 'terlambat')->distinct('user_id')->count('user_id');
+        $chartMax = max(1, $week->max('hadir'), $week->max('terlambat'));
+        $chartTicks = collect([$chartMax, (int) ceil($chartMax / 2), 0])->unique()->values();
         $recentAttendances = Attendance::query()->with('user')
             ->whereHas('user', fn ($query) => $query->where('role', 'pegawai'))
             ->orderByDesc('attendance_date')->orderByDesc('id')->limit(10)->get();
@@ -59,7 +59,9 @@ class AdminDashboardController extends Controller
             'onTime' => $onTime,
             'week' => $week,
             'todaySummary' => $todaySummary,
-            'missingCheckOut' => $missingCheckOut,
+            'lateEmployeeCount' => $lateEmployeeCount,
+            'chartMax' => $chartMax,
+            'chartTicks' => $chartTicks,
             'recentAttendances' => $recentAttendances,
         ]);
     }
